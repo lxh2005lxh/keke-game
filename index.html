@@ -244,8 +244,6 @@ body{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif;
 .fb-sub{font-size:14px;color:var(--gray);margin-bottom:14px;line-height:1.6}
 .egg-tip{background:linear-gradient(135deg,var(--sky-bg),var(--green-bg));border-radius:12px;padding:10px 14px;font-size:13px;color:var(--text);margin-bottom:14px;border-left:4px solid var(--green);text-align:left;display:none}
 .confetti{position:fixed;pointer-events:none;z-index:9999;animation:conffall 1.8s ease-out forwards}
-.grade-select{background:#fff;border:2px solid var(--sky);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;color:var(--sky2);outline:none;cursor:pointer}
-.grade-select:focus{border-color:var(--green)}
 .btn-apply{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;padding:10px 28px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
 .btn-apply:hover{transform:scale(1.04)}
 .btn-apply:disabled{opacity:.5;cursor:not-allowed}
@@ -347,25 +345,8 @@ body{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif;
   <div class="page active" id="page-study">
     <div class="page-title">📖 知识卡片</div>
     <div class="page-sub">选择单元，开始你的科学探索之旅！</div>
-    <!-- 年级筛选下拉菜单 -->
-    <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <label style="font-weight:700;color:var(--sky2);font-size:13px">📚 选择年级：</label>
-      <select class="grade-select" id="gradeSelect" onchange="changeGrade()" style="min-width:140px">
-        <option value="all">全部年级</option>
-        <option value="3-1">三年级上册</option>
-        <option value="3-2" selected>三年级下册</option>
-        <option value="4-1">四年级上册</option>
-        <option value="4-2">四年级下册</option>
-        <option value="5-1">五年级上册</option>
-        <option value="5-2">五年级下册</option>
-        <option value="6-1">六年级上册</option>
-        <option value="6-2">六年级下册</option>
-      </select>
-      <span id="gradeFilterTip" style="font-size:12px;color:var(--gray)"></span>
-    </div>
     <!-- 按年级分组显示 -->
     <div id="unitGridByGrade"></div>
-    <div class="card-grid" id="unitGrid"></div>
     <div class="kcard-wrap" id="kcardWrap">
       <div class="kcard-header">
         <button class="btn btn-sky" onclick="goBackUnits()">← 返回</button>
@@ -394,15 +375,23 @@ body{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif;
 
   <!-- 闯关页面 -->
   <div class="page" id="page-levels">
-    <div class="page-title">🏆 闯关挑战</div>
-    <div class="page-sub">完成挑战，解锁更多勋章！</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px" id="lvPageHeader">
+      <button class="btn btn-sky" onclick="backToUnits()">← 返回</button>
+      <div>
+        <div class="page-title" id="lvPageTitle">🏆 闯关挑战</div>
+        <div class="page-sub" id="lvPageSub">完成挑战，解锁更多勋章！</div>
+      </div>
+    </div>
     <div class="level-section-title">⭐ 基础关卡</div>
     <div class="level-grid" id="levelGrid"></div>
     <div class="level-section-title">🚀 进阶关卡</div>
     <div class="level-grid" id="advLevelGrid"></div>
     <div class="level-play" id="levelPlay">
-      <div class="lv-status-bar">
-        <span id="lvName">第1关</span>
+      <div class="lv-status-bar" style="display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-gray btn-sm" onclick="quitLevel()" style="padding:4px 10px;font-size:12px;background:#999;color:#fff">✕ 放弃</button>
+          <span id="lvName">第1关</span>
+        </div>
         <span id="lvProgress">1/5</span>
       </div>
       <div class="pbar-track"><div class="pbar-fill" id="lvPbar" style="width:0%"></div></div>
@@ -427,6 +416,12 @@ body{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif;
     <div class="prog-list">
       <h3>📈 单元掌握情况</h3>
       <div id="progItems"></div>
+    </div>
+    <!-- 错题复习入口 -->
+    <div class="prog-list" id="errorReviewEntry" style="margin-top:16px">
+      <h3>📝 错题复习</h3>
+      <div id="errorLevelList"></div>
+      <button class="btn btn-orange" onclick="showErrorReviewList()" style="margin-top:10px;width:100%">🔄 查看全部错题关卡</button>
     </div>
   </div>
 
@@ -559,6 +554,17 @@ body{font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif;
     </div>
   </div>
 
+  <!-- 错题复习弹窗 -->
+  <div class="overlay" id="errorListOverlay">
+    <div class="fb-box" style="max-width:400px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="color:var(--orange)">📝 错题复习</h3>
+        <button onclick="document.getElementById('errorListOverlay').classList.remove('show')" style="background:none;border:none;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div id="errorListContent"></div>
+    </div>
+  </div>
+
   <!-- 老师上传弹窗 -->
   <div class="overlay" id="uploadOverlay">
     <div class="fb-box" style="max-width:460px">
@@ -672,6 +678,38 @@ const QUESTIONS = [
   {type:'choice',q:'树木年轮稀疏的一面朝哪个方向？',opts:['A. 东','B. 南','C. 西','D. 北'],ans:1,unit:'辨别方向'},
   {type:'judge',q:'可以用太阳的位置来辨别方向。',ans:true,unit:'辨别方向'},
   
+  // ===== 以下为扩充题目（第一单元续，共25题）=====
+  {type:'judge',q:'在北半球，中午太阳在南方，影子指向北方。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'早晨起床后，看到太阳升起，应该面向哪个方向？',opts:['A. 北','B. 南','C. 东','D. 西'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'晚上在空旷的地方，可以通过观察北极星来找到北方。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'用年轮辨别方向，年轮稀疏的一面朝哪个方向？',opts:['A. 北','B. 南','C. 东','D. 西'],ans:1,unit:'辨别方向'},
+  {type:'judge',q:'在北半球，南面山坡的植物比北面更茂盛。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'北斗七星中，哪两颗星的连线指向北极星？',opts:['A. 天枢和天璇','B. 天权和玉衡','C. 开阳和摇光','D. 天权和天枢'],ans:0,unit:'辨别方向'},
+  {type:'judge',q:'指南针是利用地球磁场来指示方向的工具。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'利用影子辨别方向时，影子最短的时刻大约在一天中的什么时候？',opts:['A. 早晨','B. 上午','C. 正午','D. 傍晚'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'使用指南针时，要远离磁铁和金属物品，否则会影响准确性。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'下列哪种方法不能用来辨别方向？',opts:['A. 观察苔藓生长方向','B. 观察树枝茂盛方向','C. 听音乐','D. 观察积雪融化方向'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'在北半球，冬天积雪时，北面山坡的积雪通常比南面融化得慢。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'利用指南针辨别方向时，红色指针指向哪个方向？',opts:['A. 南方','B. 北方','C. 东方','D. 西方'],ans:1,unit:'辨别方向'},
+  {type:'judge',q:'北极星位于小熊座的尾部，是北半球夜空中重要的定位星。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'一年中，正午影子最短的一天是？',opts:['A. 冬至','B. 春分','C. 夏至','D. 秋分'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'太阳从东方升起，从西方落下，这一规律全年基本不变。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'用指南针辨别方向时，应该把指南针放在什么位置？',opts:['A. 手里随意拿着','B. 放在水平的桌面上','C. 靠近磁铁旁','D. 斜着拿'],ans:1,unit:'辨别方向'},
+  {type:'judge',q:'在夜晚，可以根据北斗七星找到北极星，从而确定北方。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'下列哪个不是自然方向辨别方法？',opts:['A. 观察苔藓','B. 观察年轮','C. 使用GPS','D. 观察积雪'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'大树的树皮粗糙且有苔藓的一面，通常朝北。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'在北半球的树林里，如何用树木辨别方向？',opts:['A. 树叶密的一面朝北','B. 树叶密的一面朝南','C. 苔藓生长无规律','D. 树皮颜色朝南更浅'],ans:1,unit:'辨别方向'},
+  {type:'judge',q:'太阳每天东升西落，是因为地球自西向东自转。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'用指南针辨别方向时，指针会摆动不停，可能是因为附近有？',opts:['A. 树木','B. 磁铁或金属','C. 水源','D. 石头'],ans:1,unit:'辨别方向'},
+  {type:'judge',q:'北极星是北方天空中一颗相对不动的星，看起来像是在指引北方。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'在晴朗的夜晚迷路时，以下哪个方法最可靠？',opts:['A. 往有灯光的方向走','B. 跟着蚂蚁窝找方向','C. 根据北极星找到北方','D. 一直往前走'],ans:2,unit:'辨别方向'},
+  {type:'judge',q:'地球绕太阳公转的方向是自西向东，所以我们看到的太阳东升西落。',ans:true,unit:'辨别方向'},
+  // ===== 新增方向题目 =====
+  {type:'choice',q:'在地图上，通常用"上北下南左西右东"来识别方向，面对地图时，东方在哪里？',opts:['A. 地图的上方','B. 地图的下方','C. 地图的左方','D. 地图的右方'],ans:3,unit:'辨别方向'},
+  {type:'judge',q:'早晨面向太阳升起的方向站立，前方是东方，后方是西方，左边是北方，右边是南方。',ans:true,unit:'辨别方向'},
+  {type:'choice',q:'如果太阳在南方，那么影子应该指向哪个方向？',opts:['A. 东方','B. 南方','C. 西方','D. 北方'],ans:3,unit:'辨别方向'},
+  {type:'judge',q:'地图上的东南西北四个方向是固定不变的，不会因为我们站在哪里而改变。',ans:true,unit:'辨别方向'},
+  
   // 第二单元 - 动物的一生 (20题)
   {type:'choice',q:'蚕的一生经历哪四个阶段？',opts:['A. 卵→幼虫→成虫→死亡','B. 卵→幼虫→蛹→成虫','C. 幼虫→蛹→成虫→产卵','D. 卵→蛹→幼虫→成虫'],ans:1,unit:'动物的一生'},
   {type:'judge',q:'蚕是完全变态发育的昆虫。',ans:true,unit:'动物的一生'},
@@ -693,6 +731,46 @@ const QUESTIONS = [
   {type:'judge',q:'生命周期是指动物从出生到死亡的全过程。',ans:true,unit:'动物的一生'},
   {type:'choice',q:'下列哪个不是昆虫？',opts:['A. 蚂蚁','B. 蜘蛛','C. 蜜蜂','D. 蝴蝶'],ans:1,unit:'动物的一生'},
   {type:'judge',q:'蚕是完全变态发育。',ans:true,unit:'动物的一生'},
+  
+  // ===== 以下为扩充题目（第二单元续，共25题）=====
+  {type:'judge',q:'昆虫的身体分为头、胸、腹三部分。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'蚕在哪个阶段会吐丝结茧？',opts:['A. 卵期','B. 幼虫期','C. 蛹期','D. 成虫期'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'蚕宝宝指的是蚕的幼虫阶段。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'关于完全变态和不完全变态，以下说法正确的是？',opts:['A. 完全变态没有蛹期','B. 不完全变态有蛹期','C. 蝗虫是不完全变态','D. 蚊子是完全变态'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'所有的昆虫在发育过程中都会经历蜕皮现象。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'下列哪种动物不是昆虫？',opts:['A. 蚂蚁','B. 蜜蜂','C. 蜘蛛','D. 蚊子'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'哺乳动物都是胎生的，而鸟类都是卵生的。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'胎生动物和卵生动物的根本区别是什么？',opts:['A. 体型大小','B. 寿命长短','C. 胚胎发育场所','D. 食性'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'动物的生命周期是指动物从出生到死亡的全过程。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'昆虫的触角有什么作用？',opts:['A. 飞行','B. 感觉气味','C. 进食','D. 防御'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'蜻蜓的若虫生活在水中，这是昆虫不完全变态的例子。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'关于蚕蛾的描述，正确的是？',opts:['A. 蚕蛾有翅膀，能飞行','B. 蚕蛾有翅膀但不能飞行','C. 蚕蛾没有翅膀','D. 蚕蛾生活在水中'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'动物的一生都要经历出生、成长、繁殖和死亡这几个阶段。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'下列哪种方法是昆虫用来呼吸的？',opts:['A. 肺','B. 鳃','C. 气管','D. 皮肤'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'哺乳动物是脊椎动物，昆虫是无脊椎动物。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'动物从幼年到成年的过程中，形态和习性发生很大变化叫做？',opts:['A. 进化','B. 生长','C. 变态','D. 适应'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'蝴蝶是完全变态昆虫，它的一生经历卵、幼虫、蛹、成虫四个阶段。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'哺乳动物幼崽出生后，主要通过什么方式获取营养？',opts:['A. 吞食泥土','B. 吸收阳光','C. 吃母乳','D. 呼吸空气'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'卵生动物的胚胎在卵内发育，所需营养主要来自卵黄。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'关于昆虫复眼的描述，正确的是？',opts:['A. 复眼只能看远处','B. 复眼由许多小眼组成','C. 复眼在腹部','D. 复眼是透明的'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'蚕在吐丝前会停止进食，身体变黄变亮，这是即将吐丝结茧的信号。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'下列哪种动物属于脊椎动物？',opts:['A. 蝴蝶','B. 蚂蚁','C. 青蛙','D. 蜜蜂'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'昆虫的外骨骼不能随身体生长，所以需要定期蜕皮。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'动物的生命周期长短不一样，以下动物中寿命最短的是？',opts:['A. 大象','B. 蜻蜓','C. 乌龟','D. 熊猫'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'变态发育让昆虫在不同阶段吃不同的食物，减少了同种昆虫之间的食物竞争。',ans:true,unit:'动物的一生'},
+  // ===== 新增动物知识点题目 =====
+  {type:'choice',q:'蝗虫的发育过程属于哪种变态类型？',opts:['A. 完全变态','B. 不完全变态','C. 无变态','D. 胎生'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'蝗虫是不完全变态昆虫，它的一生经历卵、若虫、成虫三个阶段，没有蛹期。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'蚊子的发育过程属于哪种变态类型？',opts:['A. 完全变态','B. 不完全变态','C. 无变态','D. 胎生'],ans:0,unit:'动物的一生'},
+  {type:'judge',q:'蚊子是完全变态昆虫，它的一生经历卵、幼虫、蛹、成虫四个阶段。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'蜜蜂的发育过程属于哪种变态类型？',opts:['A. 完全变态','B. 不完全变态','C. 无变态','D. 胎生'],ans:0,unit:'动物的一生'},
+  {type:'judge',q:'蜜蜂是完全变态昆虫，蜂王、工蜂和雄蜂都经历卵、幼虫、蛹、成虫四个阶段。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'以下哪种动物不是昆虫？',opts:['A. 蚂蚁','B. 蜜蜂','C. 蜘蛛','D. 蚊子'],ans:2,unit:'动物的一生'},
+  {type:'judge',q:'蜘蛛属于节肢动物中的蛛形纲，不是昆虫，因为昆虫的身体分为头、胸、腹三部分，而蜘蛛的身体分为头胸部和腹部两部分。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'青蛙的发育过程有什么特点？',opts:['A. 直接发育','B. 变态发育','C. 胎生','D. 无发育过程'],ans:1,unit:'动物的一生'},
+  {type:'judge',q:'青蛙是变态发育动物，它的幼体（蝌蚪）生活在水中，用鳃呼吸，经过变态后变成成体，用肺呼吸，可以在陆地上生活。',ans:true,unit:'动物的一生'},
+  {type:'choice',q:'蚂蚁的发育过程属于哪种变态类型？',opts:['A. 完全变态','B. 不完全变态','C. 无变态','D. 胎生'],ans:0,unit:'动物的一生'},
+  {type:'judge',q:'蚂蚁是完全变态昆虫，它的一生经历卵、幼虫、蛹、成虫四个阶段。',ans:true,unit:'动物的一生'},
   
   // 第三单元 - 只有一个地球 (20题)
   {type:'choice',q:'地球表面大约有多少是海洋？',opts:['A. 29%','B. 50%','C. 71%','D. 90%'],ans:2,unit:'只有一个地球'},
@@ -716,10 +794,43 @@ const QUESTIONS = [
   {type:'choice',q:'地球公转的方向是？',opts:['A. 自西向东','B. 自东向西','C. 自南向北','D. 自北向南'],ans:0,unit:'只有一个地球'},
   {type:'judge',q:'节约用水是保护地球的行为。',ans:true,unit:'只有一个地球'},
   
-  // 综合题目 (10题)
+  // ===== 以下为扩充题目（第三单元续，共25题）=====
+  {type:'judge',q:'地球的自转周期约为24小时，产生了昼夜交替现象。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球公转一周大约需要多长时间？',opts:['A. 24小时','B. 一个月','C. 一年','D. 一周'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'地球是太阳系中的第三颗行星。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'关于地球在太阳系中的位置，以下说法正确的是？',opts:['A. 离太阳最近','B. 离太阳第三远','C. 离太阳最远','D. 在火星和木星之间'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'地球的赤道周长约为4万千米。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'下列哪个不是地球存在生命的重要条件？',opts:['A. 适宜的温度','B. 充足的水','C. 大量的氧气','D. 适当的阳光'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'月球表面没有空气和水，所以人类无法直接在月球上生活。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球上的水大部分存在于哪里？',opts:['A. 河流','B. 湖泊','C. 海洋','D. 冰川'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'地球的卫星是月球，月球是地球唯一的天然卫星。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球自转的方向是？',opts:['A. 自东向西','B. 自西向东','C. 自南向北','D. 自北向南'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'保护地球的生态环境是我们每个人的责任。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'以下哪个行为不能保护地球？',opts:['A. 节约用电','B. 随手关灯','C. 浪费水资源','D. 垃圾分类'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'月球本身不发光，我们看到的光是月球反射的太阳光。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球的陆地面积大约占地球表面的多少？',opts:['A. 29%','B. 50%','C. 71%','D. 90%'],ans:0,unit:'只有一个地球'},
+  {type:'judge',q:'地球是一颗美丽的蓝色星球，海洋赋予了它独特的颜色。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球表面分为几个大洲？',opts:['A. 5个','B. 6个','C. 7个','D. 8个'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'地球公转时，地轴的倾斜方向基本保持不变，所以产生了四季变化。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'月球上有没有水？',opts:['A. 有很多液态水','B. 有少量固态水（冰）','C. 没有任何水','D. 有大量气态水'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'地球是目前人类发现的唯一有生命存在的星球。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球的大气层对地球有什么作用？',opts:['A. 使地球变冷','B. 阻挡有害射线，调节温度','C. 让所有光线通过','D. 导致地球失去水分'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'人类活动产生的二氧化碳等温室气体，会导致全球气候变暖。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'下列哪种自然现象与地球自转有关？',opts:['A. 四季更替','B. 昼夜交替','C. 月相变化','D. 潮汐现象'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'植树造林、减少砍伐可以吸收二氧化碳，有助于保护地球。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球的地核分为内核和外核，中心温度大约是多少？',opts:['A. 1000℃','B. 3000℃','C. 5000℃以上','D. 100℃'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'保护野生动物和维护生态平衡是保护地球的重要方式。',ans:true,unit:'只有一个地球'},
+  // ===== 新增知识点题目 =====
+  {type:'choice',q:'地球表面主要的自然植被包括森林、草原、荒漠等，其中森林的作用是？',opts:['A. 吸收二氧化碳，释放氧气','B. 增加土地沙漠化','C. 导致水土流失','D. 减少生物多样性'],ans:0,unit:'只有一个地球'},
+  {type:'judge',q:'地球上的淡水资源非常有限，因此我们必须节约用水。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'地球陆地表面的地形多种多样，其中海拔较高、地势险峻的地形是？',opts:['A. 平原','B. 高原','C. 山脉','D. 盆地'],ans:2,unit:'只有一个地球'},
+  {type:'judge',q:'山脉是地球陆地表面海拔较高、地势起伏大的地形。',ans:true,unit:'只有一个地球'},
+  {type:'choice',q:'关于水资源的说法，正确的是？',opts:['A. 地球上的水大部分是淡水','B. 淡水资源主要分布在冰川和地下','C. 海水可以直接饮用','D. 水资源是取之不尽的'],ans:1,unit:'只有一个地球'},
+  {type:'judge',q:'森林被称为"地球之肺"，能够净化空气、保持水土。',ans:true,unit:'只有一个地球'},
+  
+  // 综合题目 (9题)
   {type:'choice',q:'蚕丝的主要成分是什么？',opts:['A. 纤维素','B. 蛋白质','C. 淀粉','D. 脂肪'],ans:1,unit:'综合'},
   {type:'judge',q:'哺乳动物的幼崽都靠吃母乳长大。',ans:true,unit:'综合'},
-  {type:'choice',q:'地球公转一周大约需要多长时间？',opts:['A. 24小时','B. 一个月','C. 一年','D. 十年'],ans:2,unit:'综合'},
   {type:'judge',q:'北斗七星可以帮助我们找到北极星。',ans:true,unit:'综合'},
   {type:'choice',q:'下列哪种动物是昆虫？',opts:['A. 蜗牛','B. 蚯蚓','C. 蜻蜓','D. 蜗牛'],ans:2,unit:'综合'},
   {type:'judge',q:'地球是太阳系中唯一有生命的星球。',ans:true,unit:'综合'},
@@ -738,7 +849,26 @@ const ADV_QUESTIONS = [
   {type:'judge',q:'指南针的白色端指向地球的北极。',ans:true,unit:'综合',grade:'三年级下册'},
   {type:'choice',q:'蚕丝的主要成分是什么？',opts:['A. 纤维素','B. 蛋白质','C. 淀粉','D. 脂肪'],ans:1,unit:'综合',grade:'三年级下册'},
   {type:'judge',q:'哺乳动物的幼崽都靠吃母乳长大。',ans:true,unit:'综合',grade:'三年级下册'},
-  {type:'choice',q:'地球公转一周大约需要多长时间？',opts:['A. 24小时','B. 一个月','C. 一年','D. 十年'],ans:2,unit:'综合',grade:'三年级下册'}
+  {type:'choice',q:'地球公转一周大约需要多长时间？',opts:['A. 24小时','B. 一个月','C. 一年','D. 十年'],ans:2,unit:'综合',grade:'三年级下册'},
+  // ===== 进阶扩充题目 =====
+  {type:'choice',q:'利用北斗七星找北极星，勺口两颗星的连线大约延长多少距离能找到北极星？',opts:['A. 2倍','B. 5倍','C. 10倍','D. 20倍'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'地球公转一周产生的四季变化，与地轴倾斜有关。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'下列哪种动物属于不完全变态发育？',opts:['A. 蝴蝶','B. 蚊子','C. 蝗虫','D. 蜜蜂'],ans:2,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'地球是目前太阳系中唯一一颗适合生命生存的行星。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'月球的质量大约是地球的多少？',opts:['A. 1/6','B. 1/49','C. 1/80','D. 1/100'],ans:2,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'昆虫蜕皮后新长出的外骨骼会立即变硬。',ans:false,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'地球表面的气压层中，对流层是人类生活的主要空间，高度约为？',opts:['A. 5公里以下','B. 10-12公里','C. 50公里','D. 100公里'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'北极星并不在天空中固定不动，只是看起来不动而已。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'蚕蛾破茧后，翅膀很小不能飞行，主要原因是？',opts:['A. 蚕蛾不想飞','B. 翅膀在茧中发育不完全','C. 蚕蛾太老','D. 天气太冷'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'地球的磁场可以保护地球上的生物免受太阳风的侵害。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'在北半球，正午时分面向太阳，左手边是什么方向？',opts:['A. 北','B. 南','C. 东','D. 西'],ans:0,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'月球的引力大约是地球引力的1/6，所以同一个人在月球上会跳得更高。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'关于昆虫复眼的特点，以下说法正确的是？',opts:['A. 只有一对复眼','B. 复眼由许多小眼组成','C. 复眼只能看到近距离','D. 所有昆虫复眼形状相同'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'动物的生命周期长短主要由基因决定，但也受环境影响。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'地球的自转轴相对于公转轨道面的倾斜角度约为？',opts:['A. 15度','B. 23.5度','C. 45度','D. 66.5度'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'月相变化是由于月球绕地球运动时，被太阳照亮的部分朝向地球的角度不同造成的。',ans:true,unit:'综合',grade:'三年级下册'},
+  {type:'choice',q:'以下哪种现象与地球公转有直接关系？',opts:['A. 太阳东升西落','B. 四季更替','C. 月相变化','D. 潮汐涨落'],ans:1,unit:'综合',grade:'三年级下册'},
+  {type:'judge',q:'地球大气中的二氧化碳浓度增加，会加剧温室效应，导致全球变暖。',ans:true,unit:'综合',grade:'三年级下册'}
 ];
 
 // ===== 三年级上册题库 =====
@@ -819,7 +949,88 @@ const QUESTIONS_3UP = [
   {type:'choice',q:'以下哪种方式可以加快冰的熔化？',opts:['A. 放在冰箱里','B. 放在温度高的环境里','C. 放在密封袋里','D. 放在阴暗处'],ans:1,unit:'综合',grade:'三年级上册'},
   {type:'judge',q:'搅拌、提高水温、减小颗粒都能加快物质溶解。',ans:true,unit:'综合',grade:'三年级上册'},
   {type:'choice',q:'天气预报中风向"西北风"表示？',opts:['A. 向西北方向吹','B. 从西北方向吹来','C. 在西北方形成的风','D. 风速很大'],ans:1,unit:'综合',grade:'三年级上册'},
-  {type:'judge',q:'一个复杂的运动方式可能包含多种简单的运动形式。',ans:true,unit:'综合',grade:'三年级上册'}
+  {type:'judge',q:'一个复杂的运动方式可能包含多种简单的运动形式。',ans:true,unit:'综合',grade:'三年级上册'},
+
+  // ===== 三年级上册扩充题目 =====
+  // 天气单元扩充（20题）
+  {type:'judge',q:'云量是用目视方法估计天空中云的覆盖面积，估读时将天空划分为十份。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'天气是指一个地方在较短时间内大气的温度、降水、风向和风速、云量等综合状况。',opts:['A. 一年内','B. 较短时间内','C. 十年内','D. 一生中'],ans:1,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'气温用℃表示，读作摄氏度。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'测量气温时，气温计应放置在什么位置？',opts:['A. 阳光下','B. 地面上','C. 百叶箱中或阴凉通风处','D. 室内任意位置'],ans:2,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'降水量是指一定时间内，落到地面的雨水未经蒸发、渗透、流失，在平地上积累的深度。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'风向指的是风吹来的方向，北风是从什么方向吹来的？',opts:['A. 向北吹的风','B. 从北方吹来的风','C. 在北方形成的风','D. 往北移动的风'],ans:1,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'蒲福风力等级从0到12共13个等级，级数越高风速越大。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'下列哪种云是积云，呈棉絮状，底部平坦，通常预示晴好天气？',opts:['A. 卷云','B. 积云','C. 积雨云','D. 层云'],ans:1,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'天气预报中使用的卫星云图，可以观测大范围的云层分布和运动。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'下列哪种天气预警信号表示"停课"级别？',opts:['A. 蓝色','B. 黄色','C. 橙色','D. 红色'],ans:3,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'气温计是利用液体热胀冷缩的性质制成的。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'读数时，气温计的液柱应与什么齐平？',opts:['A. 液柱顶端','B. 液柱底端','C. 刻度线任意位置','D. 玻璃泡中心'],ans:0,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'降水量的测量工具是雨量器，测量前应先倒掉筒内的存水。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'24小时降水量达到多少毫米属于大暴雨级别？',opts:['A. 50-99.9毫米','B. 100-249.9毫米','C. 25-49.9毫米','D. 250毫米以上'],ans:1,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'使用风速仪测量风速时，应将仪器举过头顶迎风放置。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'云的类型中，以下哪种云通常与阴雨天气相关？',opts:['A. 卷云','B. 高积云','C. 积雨云','D. 卷积云'],ans:2,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'天气日历是记录每天天气现象的表格，可以帮助我们发现天气变化的规律。',ans:true,unit:'天气',grade:'三年级上册'},
+  {type:'choice',q:'一天中气温最高的时候一般出现在什么时候？',opts:['A. 中午12点','B. 下午2-3点','C. 傍晚5点','D. 上午10点'],ans:1,unit:'天气',grade:'三年级上册'},
+  {type:'judge',q:'天气日历中通常需要记录云量、气温、降水量、风向和风速等项目。',ans:true,unit:'天气',grade:'三年级上册'},
+
+  // 水单元扩充（20题）
+  {type:'judge',q:'水蒸气遇冷会变成液态的水，这个过程叫凝结。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'水沸腾时，水中会产生大量气泡，这些气泡是？',opts:['A. 空气','B. 水蒸气','C. 氧气','D. 氢气'],ans:1,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'水在标准大气压下，加热到100℃时会沸腾，沸腾时温度保持不变。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'下列哪种方法不能加快水的蒸发？',opts:['A. 加热','B. 搅拌','C. 吹风','D. 加盖密封'],ans:3,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'水的三态变化是固态、液态和气态，它们是同一种物质水的不同形态。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'给水加热时，加热至水开始沸腾后，应该继续加热还是停止加热？',opts:['A. 立即停止','B. 继续加热维持沸腾','C. 改成小火加热','D. 倒掉一部分'],ans:1,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'冰融化成水是吸热过程，水结冰是放热过程。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'在相同条件下，以下哪种物质的溶解能力最强？',opts:['A. 食盐','B. 小苏打','C. 白糖','D. 沙子'],ans:2,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'物质在水中溶解后，可以用过滤的方法将不溶解的杂质分离出来。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'一杯水放在阳光下，水慢慢减少，这个过程叫什么？',opts:['A. 凝结','B. 沸腾','C. 蒸发','D. 凝固'],ans:2,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'用酒精灯加热时，应用外焰加热，因为外焰温度最高。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'下列哪个不是影响水蒸发快慢的因素？',opts:['A. 温度','B. 风力','C. 水的颜色','D. 接触面积'],ans:2,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'在拖地时，向地面洒水可以加快地面水分蒸发，从而让地面更快变干。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'在一定条件下，水中能溶解的物质量是有限的，这个极限叫做？',opts:['A. 溶解度','B. 饱和度','C. 密度','D. 浓度'],ans:0,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'用蒸发的方法可以从盐水中分离出盐，这是利用了水蒸发后盐结晶析出的原理。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'水结成冰后，体积和重量会发生什么变化？',opts:['A. 体积变大，重量不变','B. 体积变小，重量不变','C. 体积不变，重量变大','D. 体积变大，重量变大'],ans:0,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'对比实验中，研究一个条件对事物的影响时，其他条件应保持相同。',ans:true,unit:'水',grade:'三年级上册'},
+  {type:'choice',q:'以下哪个实验可以说明水蒸气遇冷会凝结成小水滴？',opts:['A. 冰块放在阳光下融化','B. 戴眼镜从室外进到温暖的室内','C. 把水加热沸腾','D. 把水放入冰箱冷冻'],ans:1,unit:'水',grade:'三年级上册'},
+  {type:'judge',q:'在水中加入糖后糖溶解了，说明糖不能被水还原。',ans:false,unit:'水',grade:'三年级上册'},
+
+  // 物体运动单元扩充（20题）
+  {type:'judge',q:'速度是描述物体运动快慢的物理量，单位时间内通过的距离越长，速度越快。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'以下哪种物体的运动方式是直线运动？',opts:['A. 荡秋千','B. 地球绕太阳转','C. 小车在直线轨道上行驶','D. 纸风车转动'],ans:2,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'参照物的选择是任意的，同一个物体选择不同的参照物，运动状态可能不同。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'设计"过山车"轨道时，以下哪项不是基本要求？',opts:['A. 轨道要有起伏','B. 长度至少2米','C. 小车要能全程自主运动','D. 颜色必须鲜艳'],ans:3,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'钟摆的运动形式是摆动，它属于周期性的来回运动。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'以下哪种方法可以更准确地测量小车运动的时间？',opts:['A. 用秒表多次测量取平均值','B. 只测量一次','C. 用眼睛估算','D. 只测量开始时间'],ans:0,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'斜面高度越高，小车滑下后运动得越远，说明重力势能转化为动能更多。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'根据速度公式，以下哪种情况下物体速度更快？',opts:['A. 相同时间运动更短距离','B. 相同时间运动更长距离','C. 相同距离用更长时间','D. 用时间无限长'],ans:1,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'物体的运动轨迹如果是直线的，叫直线运动；如果轨迹是曲线的，叫曲线运动。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'下列哪种现象说明运动的物体具有能量？',opts:['A. 风吹动风车转动','B. 静止在桌上的书','C. 融化的冰','D. 落下的雨滴'],ans:0,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'物体以直线沿同一方向运动的形式叫做平动，平动时物体各部分运动方向相同。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'测量物体运动速度时，需要测量的两个物理量是？',opts:['A. 长度和质量','B. 时间和质量','C. 距离和时间','D. 重量和体积'],ans:2,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'设计实验时，为了使结果更可靠，通常需要进行多次测量并取平均值。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'小明步行上学大约需要15分钟，他家到学校约1公里，小明步行的速度约为？',opts:['A. 1km/h','B. 4km/h','C. 10km/h','D. 15km/h'],ans:1,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'一个物体的运动方式可以是复杂的，组合了多种简单运动形式。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'钟表上指针的运动属于什么运动形式？',opts:['A. 平动','B. 转动','C. 摆动','D. 振动'],ans:1,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'在科学实验中，使用控制变量法可以找出影响实验结果的因素。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+  {type:'choice',q:'以下哪种不是描述物体运动快慢的方法？',opts:['A. 相同时间比距离','B. 相同距离比时间','C. 看物体颜色深浅','D. 计算速度值'],ans:2,unit:'物体的运动',grade:'三年级上册'},
+  {type:'judge',q:'能量有不同形式，运动的物体具有动能，可以让其他物体运动或停止。',ans:true,unit:'物体的运动',grade:'三年级上册'},
+
+  // 三年级上册综合扩充（15题）
+  {type:'judge',q:'水循环是指水在陆地、海洋和大气之间不断运动和变化的过程。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'下列哪种方法可以使糖在水中溶解得更快？',opts:['A. 加冰降温','B. 搅拌并加热','C. 静置不动','D. 遮光保存'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'对比实验时，只改变一个条件，其他条件保持不变，这样才能准确判断该条件的影响。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'设计"过山车"时，轨道起伏的高度越高，小车运动到终点的速度通常？',opts:['A. 越慢','B. 越快','C. 不变','D. 先快后慢'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'气温计不能直接放入沸水中测量，因为它的测量范围通常只有-20℃到50℃。',ans:false,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪个现象不能说明水在蒸发？',opts:['A. 湿衣服变干','B. 雨后地面变干','C. 冰块融化','D. 烧水时壶嘴冒白气'],ans:2,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'月相的变化是由于月球绕地球运动时，观察者看到的月球被照亮部分的变化。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪个不属于水的三态变化？',opts:['A. 冰变成水','B. 水变成冰','C. 水变成水蒸气','D. 水变成糖'],ans:3,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'使用气温计时，读数前要先估计被测温度，选择合适量程的气温计。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'用扇子扇风，人感觉凉快，是因为什么？',opts:['A. 空气温度降低了','B. 加快了皮肤表面汗液蒸发','C. 扇走了热量','D. 增加了空气湿度'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'水在0℃时会结冰，结冰过程中温度保持0℃不变。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪个实验方法适合研究"水的温度对冰融化快慢的影响"？',opts:['A. 把两块相同冰块分别放在阳光下和阴凉处','B. 把一块大冰块和一块小冰块放一起','C. 把两块冰块叠放在一起','D. 把冰块放在密封袋里'],ans:0,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'天气预报通常由气象部门根据气象观测数据和气象模型综合分析后发布。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'斜面实验中发现，斜面角度越大，小车滑到平面后运动的距离越远，这说明？',opts:['A. 斜面角度越小越好','B. 角度影响了小车的初始动能','C. 斜面应该做成平的','D. 小车会自动加速'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'食盐和小苏打在水中的溶解能力不同，食盐的溶解能力通常比小苏打强。',ans:true,unit:'综合',grade:'三年级上册'}
 ];
 
 // 三年级上册进阶题目
@@ -831,42 +1042,70 @@ const ADV_QUESTIONS_3UP = [
   {type:'choice',q:'蒸发皿加热时液体快干了应该怎么做？',opts:['A. 继续加热直到全干','B. 停止加热，利用余热蒸干','C. 马上加水再加热','D. 用嘴吹干'],ans:1,unit:'综合',grade:'三年级上册'},
   {type:'judge',q:'暴雨预警中橙色级别比红色级别高。',ans:false,unit:'综合',grade:'三年级上册'},
   {type:'choice',q:'物体的运动轨迹是一条直线的运动叫做？',opts:['A. 曲线运动','B. 直线运动','C. 匀速运动','D. 加速运动'],ans:1,unit:'综合',grade:'三年级上册'},
-  {type:'judge',q:'对比实验时，除了要研究的条件外，其他条件都必须相同。',ans:true,unit:'综合',grade:'三年级上册'}
+  {type:'judge',q:'对比实验时，除了要研究的条件外，其他条件都必须相同。',ans:true,unit:'综合',grade:'三年级上册'},
+  // ===== 上册进阶扩充 =====
+  {type:'choice',q:'在"影响水蒸发快慢"的实验中，改变的条件是？',opts:['A. 水的温度','B. 水的多少','C. 水的颜色','D. 水的来源'],ans:0,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'水的温度越高，蒸发越快，所以在阳光下湿衣服干得更快。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'在相同时间内，以下哪种条件下水蒸发得最快？',opts:['A. 低温、静止、密封','B. 高温、搅拌、通风','C. 低温、搅拌、密封','D. 高温、静止、密封'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'物质在水中溶解后形成的液体叫溶液，溶质完全消失变成了新的物质。',ans:false,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'研究"物体斜面高度对小车滑行距离的影响"时，需要改变的条件是？',opts:['A. 斜面高度','B. 小车重量','C. 斜面长度','D. 地面材质'],ans:0,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'在风速等级中，风吹旗帜展开属于较大的风，而烟囱冒烟直上则属于无风或微风。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪个操作可以加快冰的融化？',opts:['A. 放在冰箱里','B. 用锤子敲碎','C. 放在阳光下并撒盐','D. 什么都不做'],ans:2,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'测量时使用多次测量取平均值的方法，可以减小误差，使结果更准确。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪种物质在水中溶解后会形成透明溶液？',opts:['A. 面粉','B. 食用油','C. 食盐','D. 沙子'],ans:2,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'天气预报的制作需要收集大量气象数据，包括气温、湿度、风向、风速、气压等。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'关于速度的单位，以下哪个是正确的？',opts:['A. 厘米/秒','B. 千米/小时','C. 米/分钟','D. 以上都不对'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'水循环的动力来自太阳，太阳的热量使水蒸发，蒸汽升到高空遇冷形成云。',ans:true,unit:'综合',grade:'三年级上册'},
+  {type:'choice',q:'以下哪种方法可以观察到风的强度？',opts:['A. 看温度计','B. 观察旗帜飘扬程度或使用风速仪','C. 看天空颜色','D. 闻气味'],ans:1,unit:'综合',grade:'三年级上册'},
+  {type:'judge',q:'做实验时，如果只改变一个条件而保持其他条件不变，这种方法叫控制变量法。',ans:true,unit:'综合',grade:'三年级上册'}
 ];
 
 // ===== 关卡配置（按年级分组）=====
 // 三年级下册关卡
+// 三年级下册关卡配置
+// 根据实际题目分布设计：辨别方向(约49题)、动物的一生(约57题)、只有一个地球(约51题)、综合(约9题)
 const LEVELS_3DOWN = [
-  {name:'第1关\n太阳与影子',icon:'☀️',medal:{i:'☀️',n:'影子侦探'},qIdx:[0,2,5,8,10],adv:false,grade:'三年级下册'},
-  {name:'第2关\n指南针',icon:'🧭',medal:{i:'🧭',n:'方向大师'},qIdx:[3,4,12,14,16],adv:false,grade:'三年级下册'},
-  {name:'第3关\n北极星',icon:'⭐',medal:{i:'⭐',n:'星空探索者'},qIdx:[11,18,19,4,5],adv:false,grade:'三年级下册'},
-  {name:'第4关\n动物生命',icon:'🐛',medal:{i:'🐛',n:'生命观察员'},qIdx:[20,22,24,26,28],adv:false,grade:'三年级下册'},
-  {name:'第5关\n昆虫世界',icon:'🦋',medal:{i:'🦋',n:'昆虫小专家'},qIdx:[21,23,30,32,34],adv:false,grade:'三年级下册'},
-  {name:'第6关\n蚕的一生',icon:'🥚',medal:{i:'🥚',n:'养蚕小能手'},qIdx:[36,37,38,39,21],adv:false,grade:'三年级下册'},
-  {name:'第7关\n地球形状',icon:'🌍',medal:{i:'🌍',n:'地球小卫士'},qIdx:[40,42,43,46,47],adv:false,grade:'三年级下册'},
-  {name:'第8关\n月球探索',icon:'🌙',medal:{i:'🌙',n:'月球探险家'},qIdx:[44,45,48,54,56],adv:false,grade:'三年级下册'},
-  {name:'第9关\n综合挑战1',icon:'🎯',medal:{i:'🎯',n:'综合挑战者'},qIdx:[0,20,40,3,23],adv:false,grade:'三年级下册'},
-  {name:'第10关\n终极挑战',icon:'🏆',medal:{i:'🏆',n:'科学小冠军'},qIdx:[19,39,59,14,34],adv:false,grade:'三年级下册'},
-  {name:'进阶1\n知识拓展',icon:'🌈',medal:{i:'🌈',n:'拓展之星'},qIdx:[0,1,2,3,4],adv:true,grade:'三年级下册'},
-  {name:'进阶2\n综合挑战',icon:'🔭',medal:{i:'🔭',n:'综合能手'},qIdx:[5,6,7,40,41],adv:true,grade:'三年级下册'},
-  {name:'进阶3\n终极挑战',icon:'👑',medal:{i:'👑',n:'科学冠军'},qIdx:[42,43,44,45,46],adv:true,grade:'三年级下册'}
+  // 第一单元 辨别方向：约49题，分3个关卡
+  {name:'第1关\n太阳与影子',icon:'☀️',medal:{i:'☀️',n:'影子侦探'},qIdx:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],adv:false,grade:'三年级下册',unitIdx:0},
+  {name:'第2关\n指南针',icon:'🧭',medal:{i:'🧭',n:'方向大师'},qIdx:[16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31],adv:false,grade:'三年级下册',unitIdx:0},
+  {name:'第3关\n北极星',icon:'⭐',medal:{i:'⭐',n:'星空探索者'},qIdx:[32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48],adv:false,grade:'三年级下册',unitIdx:0},
+  // 第二单元 动物的一生：约57题，分4个关卡
+  {name:'第4关\n动物生命',icon:'🐛',medal:{i:'🐛',n:'生命观察员'},qIdx:[49,50,51,52,53,54,55,56,57,58,59,60,61,62,63],adv:false,grade:'三年级下册',unitIdx:1},
+  {name:'第5关\n昆虫世界',icon:'🦋',medal:{i:'🦋',n:'昆虫小专家'},qIdx:[64,65,66,67,68,69,70,71,72,73,74,75,76,77,78],adv:false,grade:'三年级下册',unitIdx:1},
+  {name:'第6关\n蚕的一生',icon:'🥚',medal:{i:'🥚',n:'养蚕小能手'},qIdx:[79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94],adv:false,grade:'三年级下册',unitIdx:1},
+  {name:'第7关\n动物繁殖',icon:'🐣',medal:{i:'🐣',n:'繁殖小专家'},qIdx:[95,96,97,98,99,100,101,102,103,104,105],adv:false,grade:'三年级下册',unitIdx:1},
+  // 第三单元 只有一个地球：约51题，分3个关卡
+  {name:'第8关\n地球形状',icon:'🌍',medal:{i:'🌍',n:'地球小卫士'},qIdx:[106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122],adv:false,grade:'三年级下册',unitIdx:2},
+  {name:'第9关\n月球探索',icon:'🌙',medal:{i:'🌙',n:'月球探险家'},qIdx:[123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138],adv:false,grade:'三年级下册',unitIdx:2},
+  {name:'第10关\n保护地球',icon:'🌳',medal:{i:'🌳',n:'环保小卫士'},qIdx:[139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154],adv:false,grade:'三年级下册',unitIdx:2},
+  // 综合关卡
+  {name:'第11关\n综合挑战',icon:'🎯',medal:{i:'🎯',n:'综合挑战者'},qIdx:[155,156,157,158,159,160,161,162,163,164,165],adv:false,grade:'三年级下册',unitIdx:3},
+  // 进阶关卡
+  {name:'进阶1\n知识拓展',icon:'🌈',medal:{i:'🌈',n:'拓展之星'},qIdx:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],adv:true,grade:'三年级下册',unitIdx:-1},
+  {name:'进阶2\n综合挑战',icon:'🔭',medal:{i:'🔭',n:'综合能手'},qIdx:[49,50,51,52,53,54,55,56,57,58,59,60,61,62,63],adv:true,grade:'三年级下册',unitIdx:-1},
+  {name:'进阶3\n终极挑战',icon:'👑',medal:{i:'👑',n:'科学冠军'},qIdx:[106,107,108,109,110,111,112,113,114,115,116,117,118,119,120],adv:true,grade:'三年级下册',unitIdx:-1}
 ];
 
-// 三年级上册关卡（索引对应 QUESTIONS_3UP 数组）
+// 三年级上册关卡配置（暂不开放）
 const LEVELS_3UP = [
-  {name:'第1关\n我们关心天气',icon:'☀️',medal:{i:'☀️',n:'天气小侦探'},qIdx:[0,2,4,6,18],adv:false,grade:'三年级上册'},
-  {name:'第2关\n气温计使用',icon:'🌡️',medal:{i:'🌡️',n:'温度小专家'},qIdx:[3,5,16,18,19],adv:false,grade:'三年级上册'},
-  {name:'第3关\n风云降水',icon:'🌧️',medal:{i:'🌧️',n:'气象小能手'},qIdx:[7,8,10,12,14],adv:false,grade:'三年级上册'},
-  {name:'第4关\n水的蒸发',icon:'💧',medal:{i:'💧',n:'水循环达人'},qIdx:[20,21,22,23,38],adv:false,grade:'三年级上册'},
-  {name:'第5关\n水的沸腾',icon:'♨️',medal:{i:'♨️',n:'沸腾小科学家'},qIdx:[24,25,26,27,28],adv:false,grade:'三年级上册'},
-  {name:'第6关\n水的三态',icon:'🧊',medal:{i:'🧊',n:'三态变化达人'},qIdx:[29,30,31,32,36],adv:false,grade:'三年级上册'},
-  {name:'第7关\n物体运动',icon:'🏃',medal:{i:'🏃',n:'运动小探索者'},qIdx:[40,41,42,43,44],adv:false,grade:'三年级上册'},
-  {name:'第8关\n快与慢',icon:'⚡',medal:{i:'⚡',n:'速度小冠军'},qIdx:[50,51,52,53,54],adv:false,grade:'三年级上册'},
-  {name:'第9关\n综合挑战',icon:'🎯',medal:{i:'🎯',n:'上册综合达人'},qIdx:[60,61,62,63,64],adv:false,grade:'三年级上册'},
-  {name:'第10关\n终极挑战',icon:'🏆',medal:{i:'🏆',n:'上册科学冠军'},qIdx:[65,66,67,68,69],adv:false,grade:'三年级上册'},
-  {name:'进阶1\n深度探索',icon:'🌈',medal:{i:'🌈',n:'深度探索者'},qIdx:[0,1,2,3,4],adv:true,grade:'三年级上册'},
-  {name:'进阶2\n高手挑战',icon:'🔬',medal:{i:'🔬',n:'高手科学家'},qIdx:[5,6,7,8,9],adv:true,grade:'三年级上册'},
-  {name:'进阶3\n终极大关',icon:'👑',medal:{i:'👑',n:'上册总冠军'},qIdx:[0,2,4,6,8],adv:true,grade:'三年级上册'}
+  // 第一单元 天气：约45题，分3个关卡
+  {name:'第1关\n我们关心天气',icon:'☀️',medal:{i:'☀️',n:'天气小侦探'},qIdx:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],adv:false,grade:'三年级上册',unitIdx:0},
+  {name:'第2关\n气温计使用',icon:'🌡️',medal:{i:'🌡️',n:'温度小专家'},qIdx:[15,16,17,18,19,20,21,22,23,24,25,26,27,28,29],adv:false,grade:'三年级上册',unitIdx:0},
+  {name:'第3关\n风云降水',icon:'🌧️',medal:{i:'🌧️',n:'气象小能手'},qIdx:[30,31,32,33,34,35,36,37,38,39,40,41,42,43,44],adv:false,grade:'三年级上册',unitIdx:0},
+  // 第二单元 水：约45题，分3个关卡
+  {name:'第4关\n水的蒸发',icon:'💧',medal:{i:'💧',n:'水循环达人'},qIdx:[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59],adv:false,grade:'三年级上册',unitIdx:1},
+  {name:'第5关\n水的沸腾',icon:'♨️',medal:{i:'♨️',n:'沸腾小科学家'},qIdx:[60,61,62,63,64,65,66,67,68,69,70,71,72,73,74],adv:false,grade:'三年级上册',unitIdx:1},
+  {name:'第6关\n水的三态',icon:'🧊',medal:{i:'🧊',n:'三态变化达人'},qIdx:[75,76,77,78,79,80,81,82,83,84,85,86,87,88,89],adv:false,grade:'三年级上册',unitIdx:1},
+  // 第三单元 物体运动：约45题，分3个关卡
+  {name:'第7关\n物体运动',icon:'🏃',medal:{i:'🏃',n:'运动小探索者'},qIdx:[90,91,92,93,94,95,96,97,98,99,100,101,102,103,104],adv:false,grade:'三年级上册',unitIdx:2},
+  {name:'第8关\n快与慢',icon:'⚡',medal:{i:'⚡',n:'速度小冠军'},qIdx:[105,106,107,108,109,110,111,112,113,114,115,116,117,118,119],adv:false,grade:'三年级上册',unitIdx:2},
+  {name:'第9关\n能量与设计',icon:'🚀',medal:{i:'🚀',n:'设计小能手'},qIdx:[120,121,122,123,124,125,126,127,128,129,130,131,132,133,134],adv:false,grade:'三年级上册',unitIdx:2},
+  // 综合关卡
+  {name:'第10关\n综合挑战',icon:'🎯',medal:{i:'🎯',n:'上册综合达人'},qIdx:[0,45,90,15,60,105,30,75,120,33],adv:false,grade:'三年级上册',unitIdx:3},
+  // 进阶关卡
+  {name:'进阶1\n深度探索',icon:'🌈',medal:{i:'🌈',n:'深度探索者'},qIdx:[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],adv:true,grade:'三年级上册',unitIdx:-1},
+  {name:'进阶2\n高手挑战',icon:'🔬',medal:{i:'🔬',n:'高手科学家'},qIdx:[45,46,47,48,49,50,51,52,53,54,55,56,57,58,59],adv:true,grade:'三年级上册',unitIdx:-1},
+  {name:'进阶3\n终极大关',icon:'👑',medal:{i:'👑',n:'上册总冠军'},qIdx:[90,91,92,93,94,95,96,97,98,99,100,101,102,103,104],adv:true,grade:'三年级上册',unitIdx:-1}
 ];
 
 // 当前激活的关卡配置（默认三年级下册，会根据年级选择动态切换）
@@ -1101,10 +1340,7 @@ function studentLogin(){
   S.userName=name;
   S.classId=classId;
   
-  // 加载闯关进度
-  loadProgress();
-  
-  // 进入主界面
+  // 进入主界面（会加载年级进度）
   enterMain();
 }
 
@@ -1265,6 +1501,18 @@ function enterMain(){
   document.getElementById('mainApp').style.display='block';
   document.getElementById('displayName').textContent=S.userName;
   
+  // 初始化年级和关卡配置
+  const savedGrade=localStorage.getItem('kk_currentGrade')||'3-2';
+  S.currentGrade=savedGrade;
+  LEVELS.length=0;
+  LEVELS.push(...getActiveLevels());
+  
+  // 加载当前年级的闯关进度
+  loadProgress();
+  
+  // 修复 UNITS 中的 tag 值，确保格式正确（三年级下册 而不是 三年级下）
+  fixUnitsGradeTags();
+  
   // 老师面板 - 只有老师身份才能看到老师标签页
   if(S.role==='teacher'){
     document.getElementById('navTeacher').style.display='flex';
@@ -1279,13 +1527,6 @@ function enterMain(){
   }
   
   renderUnitGrid();
-  // 初始化时同步年级（默认三年级下册）
-  const savedGrade=localStorage.getItem('kk_currentGrade')||'3-2';
-  S.currentGrade=savedGrade;
-  const gradeEl=document.getElementById('gradeSelect');
-  if(gradeEl)gradeEl.value=savedGrade;
-  LEVELS.length=0;
-  LEVELS.push(...getActiveLevels());
   renderLvGrid();
   initStats();
   renderOnlineList();
@@ -1414,22 +1655,36 @@ function delClass(id){
   loadTeacherPanel();
 }
 
-// ===== 闯关进度 =====
-function loadProgress(){
-  const key='kk_progress_'+S.userId;
+// ===== 闯关进度（按年级分别存储）=====
+function loadProgress(gradeKey){
+  // 如果没有传入年级key，使用当前年级
+  if(!gradeKey){
+    gradeKey=S.currentGrade||'all';
+  }
+  // 按年级加载进度
+  const key='kk_progress_'+S.userId+'_'+gradeKey;
   const data=localStorage.getItem(key);
   if(data){
     const progress=JSON.parse(data);
-    S.levelProgress=progress;
+    S.levelProgress=progress.levelProgress||{};
     S.completed=new Set(progress.completed||[]);
     S.unlocked=new Set(progress.unlocked||[0]);
     S.stars=progress.stars||{};
     S.medals=progress.medals||[];
+  }else{
+    // 没有进度记录，初始化默认进度
+    S.levelProgress={};
+    S.completed=new Set();
+    S.unlocked=new Set([0]);
+    S.stars={};
+    S.medals=[];
   }
 }
 
 function saveProgress(){
-  const key='kk_progress_'+S.userId;
+  // 按年级保存进度
+  const gradeKey=S.currentGrade||'all';
+  const key='kk_progress_'+S.userId+'_'+gradeKey;
   const data={
     completed:Array.from(S.completed),
     unlocked:Array.from(S.unlocked),
@@ -1466,6 +1721,9 @@ function goPage(p){
     S.lvState.active=false;
     renderLvGrid();
   }
+  if(p==='study'){
+    renderUnitGrid();
+  }
   if(p==='stats')initStats();
   if(p==='battle')renderOnlineList();
   if(p==='teacher')loadTeacherPanel();
@@ -1473,108 +1731,85 @@ function goPage(p){
 
 // ===== 渲染单元网格 =====
 function renderUnitGrid(){
-  // 根据年级筛选渲染
+  // 按年级分组显示所有单元
   const gridByGrade=document.getElementById('unitGridByGrade');
-  const grid=document.getElementById('unitGrid');
-  const grade=S.currentGrade||'all';
+  if(!gridByGrade)return;
   
-  // 获取所有年级标签
-  const gradeTags=new Set(['三年级下']); // 默认包含
-  UNITS.forEach(u=>{
-    if(u.tag)gradeTags.add(u.tag);
+  // 确保显示
+  gridByGrade.style.display='block';
+  
+  // 按年级分组
+  const gradeGroups={};
+  UNITS.forEach((u,i)=>{
+    const tag=u.tag||'未分类';
+    if(!gradeGroups[tag])gradeGroups[tag]=[];
+    gradeGroups[tag].push({...u,originalIndex:i});
   });
   
-  // 按年级分组显示（当选择"全部"时）
-  if(grade==='all'){
-    grid.style.display='none';
-    gridByGrade.style.display='block';
-    
-    // 按年级分组
-    const gradeGroups={};
-    UNITS.forEach((u,i)=>{
-      const tag=u.tag||'未分类';
-      if(!gradeGroups[tag])gradeGroups[tag]=[];
-      gradeGroups[tag].push({...u,originalIndex:i});
-    });
-    
-    let html='';
-    // 生成每个年级的卡片区域
-    Object.keys(gradeGroups).sort().forEach(tag=>{
-      const units=gradeGroups[tag];
-      html+=`<div style="margin-bottom:24px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <h3 style="color:var(--sky2);font-size:16px;font-weight:900">📚 ${tag}</h3>
-          <span style="background:var(--sky-bg);color:var(--sky2);padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700">${units.length}个单元</span>
-        </div>
-        <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
-          ${units.map(u=>`
-            <div class="unit-card" style="border-color:${u.color||'#B3E5FC'}" onclick="selectUnit(${u.originalIndex})">
-              <span class="uicon">${u.icon||'📖'}</span>
-              <h4 style="font-size:13px;color:var(--text);line-height:1.4">${u.name.replace(/\n/g,'<br>')}</h4>
-              <span class="utag" style="background:${u.color||'#B3E5FC'};color:var(--text)">${u.tag||tag}</span>
-              <div style="margin-top:8px;font-size:11px;color:var(--gray)">${u.topics?.length||0}个知识点</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
-    });
-    
-    // 如果没有数据
-    if(Object.keys(gradeGroups).length===0){
-      html='<div style="text-align:center;color:var(--gray);padding:40px;font-size:14px">暂无知识卡片，请联系老师上传知识库</div>';
-    }
-    
-    gridByGrade.innerHTML=html;
-    document.getElementById('gradeFilterTip').textContent=`共 ${UNITS.length} 个单元，来自 ${Object.keys(gradeGroups).length} 个年级`;
-  }else{
-    // 显示选中年级的卡片
-    gridByGrade.style.display='none';
-    grid.style.display='grid';
-    grid.innerHTML='';
-    
-    let foundIndex=0;
-    const gradeLabel=getCurrentGradeLabel()||grade;
-    UNITS.forEach((u,i)=>{
-      // 直接用年级标签匹配
-      const tagMatch=u.tag===gradeLabel||u.tag===grade;
-      if(!tagMatch)return;
-      
-      const d=document.createElement('div');
-      d.className='unit-card';
-      d.style.borderColor=u.color||'#B3E5FC';
-      d.innerHTML='<span class="uicon">'+u.icon+'</span><h4>'+u.name.replace(/\n/g,'<br>')+'</h4><span class="utag" style="background:'+(u.color||'#B3E5FC')+';color:var(--text)">'+u.tag+'</span>';
-      d.onclick=()=>selectUnit(i);
-      grid.appendChild(d);
-      foundIndex++;
-    });
-    
-    if(foundIndex===0){
-      grid.innerHTML='<div style="text-align:center;color:var(--gray);padding:40px;font-size:14px">该年级暂无知识卡片</div>';
-    }
-    document.getElementById('gradeFilterTip').textContent=`${gradeLabel}共 ${foundIndex} 个单元`;
+  let html='';
+  // 生成每个年级的卡片区域
+  Object.keys(gradeGroups).sort().forEach(tag=>{
+    const units=gradeGroups[tag];
+    html+=`<div style="margin-bottom:24px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <h3 style="color:var(--sky2);font-size:16px;font-weight:900">📚 ${tag}</h3>
+        <span style="background:var(--sky-bg);color:var(--sky2);padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700">${units.length}个单元</span>
+      </div>
+      <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
+        ${units.map(u=>`
+          <div class="unit-card" style="border-color:${u.color||'#B3E5FC'}" onclick="selectUnit(${u.originalIndex})">
+            <span class="uicon">${u.icon||'📖'}</span>
+            <h4 style="font-size:13px;color:var(--text);line-height:1.4">${u.name.replace(/\n/g,'<br>')}</h4>
+            <span class="utag" style="background:${u.color||'#B3E5FC'};color:var(--text)">${u.tag||tag}</span>
+            <div style="margin-top:8px;font-size:11px;color:var(--gray)">${u.topics?.length||0}个知识点</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  });
+  
+  // 如果没有数据
+  if(Object.keys(gradeGroups).length===0){
+    html='<div style="text-align:center;color:var(--gray);padding:40px;font-size:14px">暂无知识卡片，请联系老师上传知识库</div>';
   }
+  
+  gridByGrade.innerHTML=html;
 }
 
 function selectUnit(idx){
+  // 检查是否是三年级上册，如果是则暂不开放
+  const unit=UNITS[idx];
+  if(unit.tag==='三年级上册'){
+    toast('更新中，暂不开放');
+    return;
+  }
   S.kcUnit=idx;
   S.kcArr=UNITS[idx].topics;
   S.kcIdx=0;
-  document.getElementById('unitGrid').style.display='none';
+  S.lvUnitFilter=idx;
+  document.getElementById('kcardWrap').classList.remove('show');
   document.getElementById('unitGridByGrade').style.display='none';
-  document.getElementById('kcardWrap').classList.add('show');
-  renderKCard();
+  const unitName=UNITS[idx].name;
+  document.getElementById('lvPageTitle').textContent='📚 '+unitName;
+  document.getElementById('lvPageSub').textContent=UNITS[idx].topics.length+'个知识点等你挑战';
+  goPage('levels');
+  renderLvGrid();
 }
 
 function goBackUnits(){
   document.getElementById('kcardWrap').classList.remove('show');
-  // 根据当前选中的年级决定显示哪个网格
-  if(S.currentGrade==='all'){
-    document.getElementById('unitGridByGrade').style.display='block';
-    document.getElementById('unitGrid').style.display='none';
-  }else{
-    document.getElementById('unitGrid').style.display='grid';
-    document.getElementById('unitGridByGrade').style.display='none';
-  }
+  document.getElementById('unitGridByGrade').style.display='block';
+}
+
+function backToUnits(){
+  S.lvUnitFilter=null;
+  document.getElementById('lvPageTitle').textContent='🏆 闯关挑战';
+  document.getElementById('lvPageSub').textContent='完成挑战，解锁更多勋章！';
+  goPage('study');
+  // 重新渲染单元网格，确保显示正确
+  renderUnitGrid();
+  // 隐藏知识卡片界面
+  document.getElementById('kcardWrap').classList.remove('show');
 }
 
 function renderKCard(){
@@ -1623,6 +1858,30 @@ function getCurrentGradeLabel(){
   return null;
 }
 
+// 修复 UNITS 中的 tag 值，确保格式正确（带"册"字）
+function fixUnitsGradeTags(){
+  const gradeTagMap={
+    '三年级上': '三年级上册',
+    '三年级下': '三年级下册',
+    '四年级上': '四年级上册',
+    '四年级下': '四年级下册',
+    '五年级上': '五年级上册',
+    '五年级下': '五年级下册',
+    '六年级上': '六年级上册',
+    '六年级下': '六年级下册'
+  };
+  let fixed=0;
+  UNITS.forEach(u=>{
+    if(u.tag && gradeTagMap[u.tag]){
+      u.tag=gradeTagMap[u.tag];
+      fixed++;
+    }
+  });
+  if(fixed>0){
+    console.log('已修复 '+fixed+' 个单元的年级标签');
+  }
+}
+
 function getActiveQuestions(){
   const label=getCurrentGradeLabel();
   if(!label){
@@ -1649,26 +1908,6 @@ function getActiveLevels(){
   if(label==='三年级下册') return LEVELS_3DOWN;
   if(label==='三年级上册') return LEVELS_3UP;
   return LEVELS;
-}
-
-function changeGrade(){
-  const select=document.getElementById('gradeSelect');
-  S.currentGrade=select.value;
-  localStorage.setItem('kk_currentGrade',S.currentGrade);
-  // 同步LEVELS到当前年级
-  LEVELS.length=0;
-  LEVELS.push(...getActiveLevels());
-  // 重置进度（关卡结构可能变了）
-  S.completed=new Set();
-  S.unlocked=new Set([0]);
-  S.stars={};
-  S.levelProgress={};
-  // 重新渲染
-  renderUnitGrid();
-  renderLvGrid();
-  const gradeNames={'3-1':'三年级上册','3-2':'三年级下册','4-1':'四年级上册','4-2':'四年级下册','5-1':'五年级上册','5-2':'五年级下册','6-1':'六年级上册','6-2':'六年级下册','all':'全部年级'};
-  const name=gradeNames[S.currentGrade]||S.currentGrade;
-  toast('已切换到：'+name+'，关卡同步更新');
 }
 
 // ===== 开始答题 =====
@@ -1755,7 +1994,7 @@ function checkAns(type,sel,q,mode,containerId){
   }
   
   S.answered++;
-  if(correct){S.correct++;}else{
+  if(correct){S.correct++;S.lvState.correct++;}else{
     // 记录错题（闯关模式）
     if(mode==='level')S.lvState.errors.push({...q});
   }
@@ -1802,7 +2041,14 @@ function checkAns(type,sel,q,mode,containerId){
     },800+Math.random()*1200);
   }else if(mode==='errorReview'){
     // 错题复习模式
-    if(correct)S.errorCorrect++;
+    if(correct){
+      S.errorCorrect++;
+    }else{
+      // 答错：把这道题加回错题池末尾，继续练习直到全对
+      S.errorPool.push({...q});
+      S.errorNewCount++;
+      updateErrorReviewTitle(); // 更新标题显示新增错题
+    }
     const fbDiv=document.createElement('div');
     fbDiv.style.cssText='text-align:center;margin-top:14px;padding:14px;background:'+(correct?'#E8F5E9':'#FFF3E0')+';border-radius:12px';
     fbDiv.innerHTML='<div style="font-size:28px;margin-bottom:6px">'+(correct?'🎉':'😢')+'</div>';
@@ -1819,18 +2065,42 @@ function checkAns(type,sel,q,mode,containerId){
         document.querySelector('#fbOverlay .btn').textContent='返回闯关';
         document.querySelector('#fbOverlay .btn').onclick=()=>{
           document.getElementById('fbOverlay').classList.remove('show');
-          // 标记错题复习完成
+          // 标记错题复习完成，并清空错题
           const idx=S.lvState.lvIdx;
+          const lv=LEVELS[idx];
           if(S.levelProgress[idx])S.levelProgress[idx].errors=[];
           if(S.levelProgress[idx])S.levelProgress[idx].errorReviewDone=true;
+          // 解锁下一关（如果当前关卡已通关）
+          if(S.completed.has(idx)&&idx<LEVELS.length-1){
+            S.unlocked.add(idx+1);
+          }
           saveProgress();
+          // 重置闯关状态
+          S.lvState={active:false};
           // 解锁标签
           lockNavTabs(false);
+          
+          // 如果在筛选模式下，检查是否是单元最后一关
+          if(S.lvUnitFilter!==null&&S.lvUnitFilter!==undefined){
+            // 筛选模式下：检查是否解锁了其他单元的关卡
+            const nextIdx=idx+1;
+            if(nextIdx<LEVELS.length){
+              const nextLv=LEVELS[nextIdx];
+              // 如果下一关属于不同单元，提示用户返回全局视图
+              if(nextLv.unitIdx!==lv.unitIdx){
+                toast('本单元已完成！返回学习页面可切换到其他单元');
+              }
+            }
+          }
+          
           renderLvGrid();
           goPage('levels');
         };
         document.getElementById('fbOverlay').classList.add('show');
       }else{
+        // 更新进度显示
+        document.getElementById('lvProgress').textContent=(S.errorIdx+1)+'/'+S.errorPool.length;
+        document.getElementById('lvPbar').style.width=(S.errorIdx/S.errorPool.length*100)+'%';
         renderErrorQ();
       }
     },1000);
@@ -1850,44 +2120,126 @@ function nextQ(){
 
 // ===== 关卡系统 =====
 function renderLvGrid(){
-  const grid=document.getElementById('levelGrid');
-  const advGrid=document.getElementById('advLevelGrid');
+  var grid=document.getElementById('levelGrid');
+  var advGrid=document.getElementById('advLevelGrid');
   grid.innerHTML='';advGrid.innerHTML='';
   
-  LEVELS.filter(l=>!l.adv).forEach((lv,i)=>{
-    const locked=!S.unlocked.has(i);
-    const done=S.completed.has(i);
-    const prog=S.levelProgress[i];
-    const hasErrors=prog&&prog.errors&&prog.errors.length>0;
-    const d=document.createElement('div');
+  // 根据单元过滤器筛选关卡
+  var unitF=S.lvUnitFilter;
+  var isFiltered=unitF!==null&&unitF!==undefined;
+  
+  // 分离基础关卡和进阶关卡
+  var basicLevels=LEVELS.map(function(lv,i){var r=Object.assign({},lv);r.realIdx=i;return r;});
+  var advLevels=basicLevels.filter(function(lv){return lv.adv;});
+  var baseLevels=basicLevels.filter(function(lv){return !lv.adv;});
+  
+  // 基础关卡筛选
+  var filteredBase;
+  if(isFiltered){
+    // 直接筛选属于该单元的关卡（使用unitIdx匹配）
+    filteredBase=baseLevels.filter(function(lv){
+      return lv.unitIdx===unitF;
+    });
+  }else{
+    filteredBase=baseLevels;
+  }
+  
+  // 进阶关卡：全视图时全部显示，筛选时也显示（进阶关卡是全局的）
+  var filteredAdv=advLevels;
+  
+  // 检查是否混合了多个年级（三年级上册和下册）
+  // 筛选模式下只检查基础关卡的年级
+  var grades=new Set(filteredBase.map(function(lv){return lv.grade;}));
+  var mixedGrades=grades.size>1;
+  
+  // 筛选模式下，根据当前单元的年级标签过滤进阶关卡
+  var currentGradeLabel=getCurrentGradeLabel();
+  if(isFiltered){
+    // 如果当前年级是'all'或未设置，则根据当前单元的tag来筛选
+    var filterGrade=currentGradeLabel || (UNITS[unitF] && UNITS[unitF].tag);
+    if(filterGrade){
+      filteredAdv=filteredAdv.filter(function(lv){
+        return lv.grade===filterGrade;
+      });
+    }
+  }
+  
+  // 基础关卡编号计数器（用于筛选后重新编号）
+  var baseCounter=1;
+  filteredBase.forEach(function(lv,idx){
+    var ri=lv.realIdx;
+    // 筛选模式下第一个关卡始终解锁，否则第一个全局关卡始终解锁
+    var isFirstInFilter=idx===0;
+    var isFirstGlobal=ri===0;
+    var locked=!S.unlocked.has(ri)&&!isFirstInFilter&&!isFirstGlobal;
+    var done=S.completed.has(ri);
+    var prog=S.levelProgress[ri];
+    var hasErrors=prog&&prog.errors&&prog.errors.length>0;
+    // 根据是否筛选模式决定显示名称
+    var displayName;
+    if(isFiltered){
+      // 筛选模式：显示筛选后的顺序编号
+      var subName=lv.name.split('\n').slice(1).join('\n')||'';
+      displayName='第'+baseCounter+'关'+(subName?'\n'+subName:'');
+    }else if(mixedGrades){
+      // 全视图且混合年级：显示连续编号 + 年级标签
+      var subName=lv.name.split('\n').slice(1).join('\n')||'';
+      displayName='第'+baseCounter+'关'+(subName?'\n'+subName:'');
+    }else{
+      // 全视图但单一年级：显示原始名称
+      displayName=lv.name;
+    }
+    baseCounter++;
+    var d=document.createElement('div');
     d.className='lv-card'+(locked?' locked':'')+(done?' done':'')+(hasErrors?' has-error':'');
     d.innerHTML='<span class="lv-icon">'+lv.icon+'</span>'+
       (hasErrors?'<span class="lv-error-badge">!</span>':'')+
-      '<div class="lv-name">'+lv.name.replace(/\n/g,'<br>')+'</div>'+
-      '<div class="lv-stars">'+(S.stars[i]?'⭐'.repeat(S.stars[i])+'☆'.repeat(3-S.stars[i]):'☆☆☆')+'</div>';
-    d.onclick=()=>{if(!locked&&!S.lvState.active)startLevel(i);};
+      '<div class="lv-name">'+(mixedGrades&&lv.grade?'<span style="font-size:10px;color:#999">'+lv.grade+'</span><br>':'')+displayName.replace(/\n/g,'<br>')+'</div>'+
+      '<div class="lv-stars">'+(S.stars[ri]?'⭐'.repeat(S.stars[ri])+'☆'.repeat(3-S.stars[ri]):'☆☆☆')+'</div>';
+    d.onclick=function(){if(!locked&&!S.lvState.active)startLevel(ri);};
     grid.appendChild(d);
   });
   
-  LEVELS.filter(l=>l.adv).forEach((lv,i)=>{
-    const realIdx=LEVELS.findIndex(l=>l.name===lv.name);
-    const prevIdx=realIdx-1;
-    const locked=!S.unlocked.has(realIdx)||(prevIdx>=0&&!S.completed.has(prevIdx));
-    const done=S.completed.has(realIdx);
-    const prog=S.levelProgress[realIdx];
-    const hasErrors=prog&&prog.errors&&prog.errors.length>0;
-    const d=document.createElement('div');
+  // 进阶关卡编号（进阶关卡按顺序解锁：完成前一个才能进入下一个）
+  var advCounter=1;
+  // 获取所有进阶关卡的索引（按顺序）
+  var allAdvIndices=filteredAdv.map(function(lv){return lv.realIdx;});
+  filteredAdv.forEach(function(lv){
+    var ri=lv.realIdx;
+    // 进阶关卡按顺序解锁
+    // 找到当前进阶关卡在筛选结果中的位置
+    var advPos=allAdvIndices.indexOf(ri);
+    // 第一个进阶关卡始终可进入，后续需要前一个完成
+    var prevAdvIdx=advPos>0?allAdvIndices[advPos-1]:-1;
+    var locked=prevAdvIdx>=0&&!S.completed.has(prevAdvIdx);
+    var done=S.completed.has(ri);
+    var prog=S.levelProgress[ri];
+    var hasErrors=prog&&prog.errors&&prog.errors.length>0;
+    var displayName=lv.name;
+    advCounter++;
+    var d=document.createElement('div');
     d.className='lv-card'+(locked?' locked':'')+(done?' done':'')+(hasErrors?' has-error':'');
     d.innerHTML='<span class="lv-adv">进阶</span><span class="lv-icon">'+lv.icon+'</span>'+
       (hasErrors?'<span class="lv-error-badge">!</span>':'')+
-      '<div class="lv-name">'+lv.name.replace(/\n/g,'<br>')+'</div>'+
-      '<div class="lv-stars">'+(S.stars[realIdx]?'⭐'.repeat(S.stars[realIdx])+'☆'.repeat(3-S.stars[realIdx]):'☆☆☆')+'</div>';
-    d.onclick=()=>{if(!locked&&!S.lvState.active)startLevel(realIdx);};
+      '<div class="lv-name">'+displayName.replace(/\n/g,'<br>')+'</div>'+
+      '<div class="lv-stars">'+(S.stars[ri]?'⭐'.repeat(S.stars[ri])+'☆'.repeat(3-S.stars[ri]):'☆☆☆')+'</div>';
+    d.onclick=function(){if(!locked&&!S.lvState.active)startLevel(ri);};
     advGrid.appendChild(d);
   });
   
-  document.querySelectorAll('.level-grid').forEach(g=>g.style.display='');
-  document.querySelectorAll('.level-section-title').forEach(t=>t.style.display='');
+  // 显示/隐藏进阶关卡区域
+  var advSectionTitle=document.querySelector('.level-section-title:last-of-type');
+  var advSectionNext=advSectionTitle?advSectionTitle.nextElementSibling:null;
+  if(filteredAdv.length===0){
+    if(advSectionTitle)advSectionTitle.style.display='none';
+    if(advGrid)advGrid.style.display='none';
+  }else{
+    if(advSectionTitle)advSectionTitle.style.display='';
+    if(advGrid)advGrid.style.display='';
+  }
+  
+  document.querySelectorAll('.level-grid').forEach(function(g){g.style.display='';});
+  document.querySelectorAll('.level-section-title').forEach(function(t){t.style.display='';});
   document.getElementById('levelPlay').style.display='none';
   renderMedals();
 }
@@ -1901,7 +2253,7 @@ function startLevel(idx){
     return;
   }
   
-  // 生成5道题（从当前年级题库中取）
+  // 根据qIdx生成题目（从当前年级题库中取）
   const activeQ=getActiveQuestions();
   const advQ=getActiveAdvQuestions();
   const lv=LEVELS[idx];
@@ -1912,7 +2264,9 @@ function startLevel(idx){
   }else{
     qs=lv.qIdx.map(i=>activeQ[i%activeQ.length]||activeQ[0]);
   }
-  S.lvState={active:true,lvIdx:idx,qIdx:0,correct:0,qs:qs,errors:[]};
+  // 每关题目数量：直接使用qIdx的实际长度，最少5题
+  const total=Math.max(qs.length,5);
+  S.lvState={active:true,lvIdx:idx,qIdx:0,correct:0,total:total,qs:qs,errors:[]};
   
   // 锁定其他标签页
   lockNavTabs(true);
@@ -1935,13 +2289,27 @@ function lockNavTabs(lock){
 }
 
 function nextLvQ(){
-  if(S.lvState.qIdx>=5||!S.lvState.active){
+  const total=S.lvState.total||5;
+  if(S.lvState.qIdx>=total||!S.lvState.active){
     endLevel();return;
   }
-  document.getElementById('lvProgress').textContent=(S.lvState.qIdx+1)+'/5';
-  document.getElementById('lvPbar').style.width=(S.lvState.qIdx/5*100)+'%';
-  document.getElementById('lvName').textContent=LEVELS[S.lvState.lvIdx].name.replace(/\n/g,'')+' · '+(S.lvState.qIdx+1)+'/5';
+  document.getElementById('lvProgress').textContent=(S.lvState.qIdx+1)+'/'+total;
+  document.getElementById('lvPbar').style.width=(S.lvState.qIdx/total*100)+'%';
+  document.getElementById('lvName').textContent=LEVELS[S.lvState.lvIdx].name.replace(/\n/g,'')+' · '+(S.lvState.qIdx+1)+'/'+total;
   renderQ(S.lvState.qs[S.lvState.qIdx],'quizArea','level');
+}
+
+// 放弃当前关卡
+function quitLevel(){
+  if(!confirm('确定要放弃当前挑战吗？\n放弃后本次闯关成绩不会保存。')){
+    return;
+  }
+  S.lvState.active=false;
+  lockNavTabs(false);
+  document.querySelectorAll('.level-grid, .level-section-title, .medals-wrap').forEach(function(el){el.style.display='';});
+  document.getElementById('levelPlay').style.display='none';
+  renderLvGrid();
+  toast('已放弃挑战，可以重新开始');
 }
 
 function endLevel(){
@@ -1950,21 +2318,28 @@ function endLevel(){
   lockNavTabs(false);
   
   const cor=S.lvState.correct;
-  const st=cor>=5?3:cor>=3?2:cor>=1?1:0;
+  const total=S.lvState.total||5;
+  // 动态星级计算：3星>=80%正确，2星>=50%正确，1星>=1正确
+  const passThreshold=Math.ceil(total*0.6);  // 60%为通过线
+  const st=cor>=total*0.8?3:cor>=total*0.5?2:cor>=1?1:0;
   const idx=S.lvState.lvIdx;
   
   // 保存错题
   S.levelProgress[idx]={
-    completed:cor>=3,
+    completed:cor>=passThreshold,
     errors:S.lvState.errors,
     errorReviewDone:false
   };
   
-  // 只有答对3题以上才算通过
-  if(cor>=3){
+  // 答对>=60%才算通过
+  if(cor>=passThreshold){
     S.completed.add(idx);
     S.stars[idx]=Math.max(S.stars[idx]||0,st);
-    if(idx<LEVELS.length-1)S.unlocked.add(idx+1);
+    const lv=LEVELS[idx];
+    // 解锁下一关
+    if(idx<LEVELS.length-1){
+      S.unlocked.add(idx+1);
+    }
     const medal=LEVELS[idx].medal;
     if(!S.medals.find(m=>m.n===medal.n))S.medals.push(medal);
     document.getElementById('badgeCount').textContent=S.medals.length;
@@ -1972,12 +2347,41 @@ function endLevel(){
     document.getElementById('lcStars').textContent='⭐'.repeat(st)+'☆'.repeat(3-st);
     document.getElementById('lcMedalBig').textContent=medal.i;
     document.getElementById('lcMedalLabel').textContent='🎉 解锁勋章：'+medal.n;
-    document.getElementById('lcDesc').textContent='答对'+cor+'/5题！';
+    document.getElementById('lcDesc').textContent='答对'+cor+'/'+total+'题！';
     
     // 有错题需要重做
     const errCount=S.lvState.errors.length;
     document.getElementById('lcErrorSection').style.display=errCount>0?'block':'none';
     document.getElementById('lcErrorCount').textContent=errCount;
+    
+    // 检查是否在筛选模式下且是单元最后一关（下一关属于不同单元）
+    const isFiltered=S.lvUnitFilter!==null&&S.lvUnitFilter!==undefined;
+    const isLastInUnit=(idx<LEVELS.length-1&&LEVELS[idx+1].unitIdx!==lv.unitIdx);
+    const isNextDifferentUnit=idx<LEVELS.length-1&&LEVELS[idx+1].unitIdx!==lv.unitIdx;
+    
+    if(errCount>0){
+      // 有错题
+      document.getElementById('btnNextLv').style.display='none';
+    }else if(isFiltered&&isLastInUnit){
+      // 单元最后一关，且下一关属于不同单元
+      document.getElementById('btnNextLv').style.display='inline-block';
+      document.getElementById('btnNextLv').textContent='返回学习页面 ↩';
+      document.getElementById('btnNextLv').onclick=()=>{
+        document.getElementById('lcOverlay').classList.remove('show');
+        S.lvUnitFilter=null;
+        S.lvState={active:false};
+        lockNavTabs(false);
+        // 确保进度已保存
+        saveProgress();
+        toast('本单元已完成！切换到其他单元继续挑战吧');
+        goPage('study');
+      };
+    }else{
+      document.getElementById('btnNextLv').style.display='inline-block';
+      document.getElementById('btnNextLv').textContent='下一关 →';
+      document.getElementById('btnNextLv').onclick=()=>closeLc(true);
+    }
+    
     document.getElementById('lcOverlay').classList.add('show');
     launchConfetti();
   }else{
@@ -1985,8 +2389,9 @@ function endLevel(){
     document.getElementById('lcStars').textContent='⭐'.repeat(0);
     document.getElementById('lcMedalBig').textContent='💪';
     document.getElementById('lcMedalLabel').textContent='继续加油！';
-    document.getElementById('lcDesc').textContent='答对'+cor+'/5题，需要答对3题以上才算通过哦！';
+    document.getElementById('lcDesc').textContent='答对'+cor+'/'+total+'题，需要答对'+passThreshold+'题以上才算通过哦！';
     document.getElementById('lcErrorSection').style.display='none';
+    document.getElementById('btnNextLv').style.display='none';
     document.getElementById('lcOverlay').classList.add('show');
   }
   
@@ -1997,19 +2402,25 @@ function endLevel(){
 
 function closeLc(goNext){
   document.getElementById('lcOverlay').classList.remove('show');
+  
   if(goNext&&S.lvState.lvIdx<LEVELS.length-1){
     const nextIdx=S.lvState.lvIdx+1;
     // 检查下一关是否有未完成的错题
     const nextProg=S.levelProgress[nextIdx];
     if(nextProg&&nextProg.errors&&nextProg.errors.length>0&&!nextProg.errorReviewDone){
       toast('请先完成上一关的错题复习！');
-      setTimeout(()=>startErrorReviewMode(S.lvState.lvIdx),500);
+      setTimeout(()=>startErrorReviewMode(nextIdx),500);
     }else{
       startLevel(nextIdx);
     }
-  }else if(!goNext){
-    // 解锁标签
+  }else{
+    // 重置闯关状态并解锁标签
+    S.lvState={active:false};
     lockNavTabs(false);
+    // 确保进度已保存
+    saveProgress();
+    renderLvGrid();
+    goPage('levels');
   }
 }
 
@@ -2025,6 +2436,7 @@ function startErrorReviewMode(idx){
   S.errorPool=[...prog.errors];
   S.errorIdx=0;
   S.errorCorrect=0;
+  S.errorNewCount=0; // 记录新增错题数
   
   // 锁定导航标签
   lockNavTabs(true);
@@ -2032,8 +2444,14 @@ function startErrorReviewMode(idx){
   document.querySelectorAll('.level-grid, .level-section-title, .medals-wrap').forEach(el=>el.style.display='none');
   document.getElementById('levelPlay').style.display='block';
   document.getElementById('lcOverlay').classList.remove('show');
-  document.getElementById('lvName').textContent='【错题复习】'+prog.errors.length+'道题';
+  updateErrorReviewTitle();
   renderErrorQ();
+}
+
+function updateErrorReviewTitle(){
+  const total=S.errorPool.length;
+  const title=total+'道题';
+  document.getElementById('lvName').textContent='【错题复习】'+title;
 }
 
 function startErrorReview(){
@@ -2082,6 +2500,72 @@ function initStats(){
     d.innerHTML='<div class="prog-label"><span>'+item.l+'</span><span>'+item.p+'%</span></div><div class="pbar2"><div class="pbar2-fill" style="width:'+item.p+'%"></div></div>';
     pItems.appendChild(d);
   });
+  
+  // 显示有错题的关卡
+  renderErrorLevelList();
+}
+
+// 渲染有错题的关卡列表
+function renderErrorLevelList(){
+  const list=document.getElementById('errorLevelList');
+  if(!list)return;
+  list.innerHTML='';
+  
+  var hasError=false;
+  LEVELS.forEach(function(lv,idx){
+    var prog=S.levelProgress[idx];
+    if(prog&&prog.errors&&prog.errors.length>0){
+      hasError=true;
+      var done=prog.errorReviewDone?'✅ 已完成':'⚠️ 待复习';
+      var d=document.createElement('div');
+      d.className='unit-card';
+      d.style.cssText='display:flex;justify-content:space-between;align-items:center;cursor:pointer';
+      d.innerHTML='<div><span>'+lv.icon+'</span> <span>'+lv.name.replace(/\n/g,' ')+'</span></div><div><span style="color:'+(prog.errorReviewDone?'green':'orange')+';font-size:12px">'+done+'</span> <span style="color:#999;font-size:12px">'+prog.errors.length+'题</span></div>';
+      d.onclick=function(){
+        if(prog.errorReviewDone){
+          toast('此关错题已复习完成');
+        }else{
+          goPage('levels');
+          startErrorReviewMode(idx);
+        }
+      };
+      list.appendChild(d);
+    }
+  });
+  
+  if(!hasError){
+    list.innerHTML='<div style="text-align:center;color:#999;padding:20px;font-size:13px">🎉 暂无错题，继续保持！</div>';
+  }
+}
+
+// 显示错题复习弹窗
+function showErrorReviewList(){
+  var html='<div style="max-height:400px;overflow-y:auto">';
+  var hasError=false;
+  LEVELS.forEach(function(lv,idx){
+    var prog=S.levelProgress[idx];
+    if(prog&&prog.errors&&prog.errors.length>0){
+      hasError=true;
+      var done=prog.errorReviewDone?'✅':'⚠️';
+      html+='<div class="unit-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer" onclick="closeErrorListAndStart('+idx+')">';
+      html+='<div><span>'+lv.icon+'</span> <span>'+lv.name.replace(/\n/g,' ')+'</span></div>';
+      html+='<div><span style="color:'+(prog.errorReviewDone?'green':'orange')+'">'+done+'</span> <span style="color:#999;font-size:12px">'+prog.errors.length+'题</span></div>';
+      html+='</div>';
+    }
+  });
+  if(!hasError){
+    html+='<div style="text-align:center;color:#999;padding:30px">🎉 暂无错题，太棒了！</div>';
+  }
+  html+='</div>';
+  
+  document.getElementById('errorListContent').innerHTML=html;
+  document.getElementById('errorListOverlay').classList.add('show');
+}
+
+function closeErrorListAndStart(idx){
+  document.getElementById('errorListOverlay').classList.remove('show');
+  goPage('levels');
+  startErrorReviewMode(idx);
 }
 
 function exportCSV(){
@@ -2482,7 +2966,7 @@ function parseTextToKnowledge(text){
   const questions=[],units=[];
   
   // 识别年级信息
-  let detectedGrade='三年级下'; // 默认值
+  let detectedGrade='三年级下册'; // 默认值
   const gradePatterns=[
     {regex:/三年级上|三上|3年级上|3上/gi,grade:'三年级上册'},
     {regex:/三年级下|三下|3年级下|3下/gi,grade:'三年级下册'},
@@ -2659,50 +3143,9 @@ function applyUpload(){
   // 重置闯关进度（因为关卡结构已变）
   resetAllProgress();
   
-  // 更新年级下拉菜单选项
-  updateGradeSelectOptions();
-  
   closeUpload();
   launchConfetti();
   toast('知识点库更新成功！请查看新的知识卡片和闯关');
-}
-
-// 更新年级下拉菜单选项
-function updateGradeSelectOptions(){
-  const select=document.getElementById('gradeSelect');
-  if(!select)return;
-  
-  // 收集所有年级
-  const grades=new Set();
-  UNITS.forEach(u=>{
-    if(u.tag){
-      grades.add(u.tag);
-    }
-  });
-  
-  // 保留常用年级选项（如果未存在）
-  const commonGrades=[
-    {value:'3-1',label:'三年级上册'},
-    {value:'3-2',label:'三年级下册'},
-    {value:'4-1',label:'四年级上册'},
-    {value:'4-2',label:'四年级下册'},
-    {value:'5-1',label:'五年级上册'},
-    {value:'5-2',label:'五年级下册'},
-    {value:'6-1',label:'六年级上册'},
-    {value:'6-2',label:'六年级下册'}
-  ];
-  
-  // 如果检测到的年级不在常见列表中，添加到选项
-  grades.forEach(tag=>{
-    const exists=commonGrades.some(g=>g.label===tag);
-    if(!exists){
-      // 添加新年级选项
-      const option=document.createElement('option');
-      option.value='custom_'+tag;
-      option.textContent=tag;
-      select.appendChild(option);
-    }
-  });
 }
 
 function resetAllProgress(){
@@ -2720,57 +3163,72 @@ function rebuildLevels(){
   
   // 根据上传的单元生成对应关卡
   const icons=['☀️','🌙','⭐','🌈','🔥','💧','🌱','🌸','🍃','❄️','🎯','💎','🏆'];
+  const Q_PER_LEVEL_MIN=5; // 每个关卡最少题目数
+  const Q_PER_LEVEL_MAX=8; // 每个关卡最多题目数
   
   if(UNITS.length>0){
-    // 遍历每个单元，每个单元生成2个关卡（基础+进阶）
+    // 遍历每个单元
     UNITS.forEach((unit,unitIdx)=>{
       const unitName=unit.name.replace(/\n/g,'').substring(0,8);
       const icon=unit.icon||icons[unitIdx%icons.length];
+      const grade=unit.tag||'未分类';
       
-      // 找出属于该单元的题目
+      // 找出属于该单元的题目（精确匹配）
       const unitQuestions=QUESTIONS.filter(q=>{
         if(!q.unit)return false;
-        const qUnit=q.unit.replace(/\n/g,'').toLowerCase();
-        const uName=unit.name.replace(/\n/g,'').toLowerCase();
-        return qUnit.includes(uName)||uName.includes(qUnit);
+        // 提取题目单元名中的关键词进行匹配
+        const qUnit=q.unit.replace(/\n/g,'');
+        const uName=unit.name.replace(/\n/g,'');
+        // 匹配：题目单元名包含在单元名中，或单元名包含题目单元名
+        return qUnit.includes(uName)||uName.includes(qUnit)||qUnit.includes('综合');
       });
       
-      // 基础关卡
-      if(unitQuestions.length>0||QUESTIONS.length>0){
-        const baseQIdx=[];
-        for(let j=0;j<5;j++){
-          if(unitQuestions.length>0){
-            baseQIdx.push(QUESTIONS.indexOf(unitQuestions[j%unitQuestions.length]));
-          }else{
-            baseQIdx.push((unitIdx*5+j)%QUESTIONS.length);
-          }
-        }
-        LEVELS.push({
-          name:unitName+'\n基础关',
-          icon:icon,
-          medal:{i:icon,n:unitName+'基础勋章'},
-          qIdx:baseQIdx,
-          adv:false
+      // 如果没有匹配到题目，尝试模糊匹配
+      let finalQuestions=unitQuestions;
+      if(finalQuestions.length===0){
+        const topicKeywords=unit.topics?unit.topics.map(t=>t.title):[];
+        finalQuestions=QUESTIONS.filter(q=>{
+          if(!q.unit)return false;
+          const qUnit=q.unit.replace(/\n/g,'');
+          // 检查题目单元是否与任何一个知识点标题相关
+          return topicKeywords.some(kw=>kw.includes(qUnit)||qUnit.includes(kw));
         });
       }
       
-      // 进阶关卡
-      if(QUESTIONS.length>5){
-        const advQIdx=[];
-        for(let j=0;j<5;j++){
-          if(unitQuestions.length>5){
-            advQIdx.push(QUESTIONS.indexOf(unitQuestions[(j+5)%unitQuestions.length]));
-          }else{
-            advQIdx.push((unitIdx*5+j+5)%QUESTIONS.length);
-          }
+      // 如果还是没有题目，使用全题库（按年级筛选）
+      if(finalQuestions.length===0 && grade){
+        finalQuestions=QUESTIONS.filter(q=>q.grade===grade);
+      }
+      
+      // 计算需要生成多少个关卡
+      let numLevels=0;
+      if(finalQuestions.length>0){
+        numLevels=Math.ceil(finalQuestions.length/Q_PER_LEVEL_MIN);
+        if(numLevels<1)numLevels=1;
+        if(numLevels>10)numLevels=10; // 最多10个关卡
+      }
+      
+      // 为该单元生成关卡
+      for(let lv=0;lv<numLevels;lv++){
+        const startIdx=lv*Q_PER_LEVEL_MIN;
+        const endIdx=Math.min(startIdx+Q_PER_LEVEL_MAX,finalQuestions.length);
+        const levelQuestions=finalQuestions.slice(startIdx,endIdx);
+        
+        // 转换为题库索引
+        const qIdx=levelQuestions.map(q=>QUESTIONS.indexOf(q)).filter(i=>i>=0);
+        
+        if(qIdx.length>0){
+          const isAdv=(lv>=Math.ceil(numLevels/2)); // 后半部分为进阶关卡
+          LEVELS.push({
+            name:unitName+(numLevels>1?'\n第'+(lv+1)+'关':''),
+            icon:isAdv?'🚀':icon,
+            medal:{i:isAdv?'🚀':icon,n:unitName+(numLevels>1?'第'+(lv+1):'')+'勋章'},
+            qIdx:qIdx,
+            adv:isAdv,
+            unitIdx:unitIdx,
+            grade:grade
+          });
         }
-        LEVELS.push({
-          name:unitName+'\n进阶关',
-          icon:'🚀',
-          medal:{i:'🚀',n:unitName+'进阶勋章'},
-          qIdx:advQIdx,
-          adv:true
-        });
       }
     });
   }
@@ -2790,17 +3248,19 @@ function rebuildLevels(){
           icon:icons[i%icons.length],
           medal:{i:icons[i%icons.length],n:'第'+(i+1)+'关勋章'},
           qIdx:qIdx,
-          adv:false
+          adv:false,
+          unitIdx:-1,
+          grade:null
         });
       }
     }
   }
   
-  // 添加进阶关卡（如果题库足够）
+  // 添加综合进阶关卡（如果题库足够）
   if(QUESTIONS.length>=15){
-    LEVELS.push({name:'知识\n拓展',icon:'🌈',medal:{i:'🌈',n:'拓展之星'},qIdx:[0,1,2,3,4].map(i=>i%QUESTIONS.length),adv:true});
-    LEVELS.push({name:'综合\n挑战',icon:'🔭',medal:{i:'🔭',n:'综合能手'},qIdx:[5,6,7,8,9].map(i=>i%QUESTIONS.length),adv:true});
-    LEVELS.push({name:'终极\n挑战',icon:'👑',medal:{i:'👑',n:'科学冠军'},qIdx:[10,11,12,13,14].map(i=>i%QUESTIONS.length),adv:true});
+    LEVELS.push({name:'知识\n拓展',icon:'🌈',medal:{i:'🌈',n:'拓展之星'},qIdx:[0,1,2,3,4].map(i=>i%QUESTIONS.length),adv:true,unitIdx:-1,grade:null});
+    LEVELS.push({name:'综合\n挑战',icon:'🔭',medal:{i:'🔭',n:'综合能手'},qIdx:[5,6,7,8,9].map(i=>i%QUESTIONS.length),adv:true,unitIdx:-1,grade:null});
+    LEVELS.push({name:'终极\n挑战',icon:'👑',medal:{i:'👑',n:'科学冠军'},qIdx:[10,11,12,13,14].map(i=>i%QUESTIONS.length),adv:true,unitIdx:-1,grade:null});
   }
 }
 
